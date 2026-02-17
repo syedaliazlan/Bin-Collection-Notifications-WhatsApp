@@ -204,38 +204,103 @@ export async function checkAndSendNotifications(type: "put-out" | "bring-in" = "
   // Determine which tenant is responsible
   let responsibleTenant: Tenant | null = null;
   
-  if (schedule.rotationEnabled && tenants.length > 0) {
-    const rotationKey = "global";
-    let rotationState = await rotationCollection.findOne({ binType: rotationKey });
+  if (type === "bring-in") {
+    // ═══════════════════════════════════════════════════════════════════
+    // BRING-IN: The same person who put the bins out must bring them in.
+    // Look up who was responsible from the most recent put-out notification
+    // for this collection date. Do NOT use the rotation index because it
+    // was already advanced after the put-out was sent.
+    // ═══════════════════════════════════════════════════════════════════
+    const putOutNotification = await notificationsCollection.findOne({
+      isTest: { $ne: true },
+      notificationType: "put-out",
+      collectionDate: collectionDate,
+      status: "success",
+    });
 
-    if (!rotationState) {
-      // Initialize global rotation state
-      const existingStates = await rotationCollection
-        .find({ binType: { $ne: "global" } })
-        .sort({ lastUpdated: -1 })
-        .limit(1)
-        .toArray();
-      
-      const initialIndex = existingStates.length > 0 
-        ? existingStates[0].currentTenantIndex 
-        : 0;
-      
-      await rotationCollection.insertOne({
-        binType: rotationKey,
-        currentTenantIndex: initialIndex,
-        lastUpdated: new Date(),
-      });
-      rotationState = await rotationCollection.findOne({ binType: rotationKey });
-      console.log(`Initialized global rotation state with index ${initialIndex}`);
+    if (putOutNotification && putOutNotification.responsibleTenant) {
+      // Find the tenant object by name so the message template works correctly
+      const matchedTenant = tenants.find(
+        (t) => t.name === putOutNotification.responsibleTenant
+      );
+      if (matchedTenant) {
+        responsibleTenant = matchedTenant;
+        console.log(`[ROTATION] Bring-in: using same person as put-out → ${responsibleTenant.name}`);
+      } else {
+        // Tenant name from put-out doesn't match any active tenant (maybe renamed/deleted)
+        // Create a minimal tenant-like object so the name still appears in the message
+        responsibleTenant = { name: putOutNotification.responsibleTenant } as Tenant;
+        console.log(`[ROTATION] Bring-in: tenant "${putOutNotification.responsibleTenant}" from put-out not found in active list, using name directly`);
+      }
+    } else {
+      // Fallback: no matching put-out found (e.g. old data without collectionDate).
+      // Search for the most recent put-out within 26 hours.
+      const recentPutOut = await notificationsCollection.findOne(
+        {
+          isTest: { $ne: true },
+          status: "success",
+          notificationType: "put-out",
+          sentAt: { $gte: new Date(Date.now() - 26 * 60 * 60 * 1000) },
+        },
+        { sort: { sentAt: -1 } }
+      );
+
+      if (recentPutOut && recentPutOut.responsibleTenant) {
+        const matchedTenant = tenants.find(
+          (t) => t.name === recentPutOut.responsibleTenant
+        );
+        responsibleTenant = matchedTenant || ({ name: recentPutOut.responsibleTenant } as Tenant);
+        console.log(`[ROTATION] Bring-in fallback: using recent put-out person → ${responsibleTenant.name}`);
+      } else {
+        // Last resort: use current rotation index
+        console.log(`[ROTATION] Bring-in: no put-out notification found, falling back to rotation index`);
+        if (schedule.rotationEnabled && tenants.length > 0) {
+          const rotationState = await rotationCollection.findOne({ binType: "global" });
+          const idx = rotationState?.currentTenantIndex ?? 0;
+          // The index was already advanced, so go back one to get the person who should have put out
+          const putOutIdx = (idx - 1 + tenants.length) % tenants.length;
+          responsibleTenant = tenants[putOutIdx] || tenants[0];
+          console.log(`[ROTATION] Bring-in last-resort: rotation index ${idx}, rewound to ${putOutIdx} → ${responsibleTenant.name}`);
+        } else if (tenants.length > 0) {
+          responsibleTenant = tenants[0];
+        }
+      }
     }
+  } else {
+    // ═══════════════════════════════════════════════════════════════════
+    // PUT-OUT: Use rotation index and advance it for next week
+    // ═══════════════════════════════════════════════════════════════════
+    if (schedule.rotationEnabled && tenants.length > 0) {
+      const rotationKey = "global";
+      let rotationState = await rotationCollection.findOne({ binType: rotationKey });
 
-    if (rotationState) {
-      responsibleTenant = tenants[rotationState.currentTenantIndex] || tenants[0];
-      
-      console.log(`[ROTATION] Type: ${type}, Current index: ${rotationState.currentTenantIndex}, Tenant: ${responsibleTenant?.name}`);
-      
-      // Advance rotation for next time (only for put-out notifications)
-      if (type === "put-out") {
+      if (!rotationState) {
+        // Initialize global rotation state
+        const existingStates = await rotationCollection
+          .find({ binType: { $ne: "global" } })
+          .sort({ lastUpdated: -1 })
+          .limit(1)
+          .toArray();
+        
+        const initialIndex = existingStates.length > 0 
+          ? existingStates[0].currentTenantIndex 
+          : 0;
+        
+        await rotationCollection.insertOne({
+          binType: rotationKey,
+          currentTenantIndex: initialIndex,
+          lastUpdated: new Date(),
+        });
+        rotationState = await rotationCollection.findOne({ binType: rotationKey });
+        console.log(`Initialized global rotation state with index ${initialIndex}`);
+      }
+
+      if (rotationState) {
+        responsibleTenant = tenants[rotationState.currentTenantIndex] || tenants[0];
+        
+        console.log(`[ROTATION] Put-out: Current index: ${rotationState.currentTenantIndex}, Tenant: ${responsibleTenant?.name}`);
+        
+        // Advance rotation for next week
         const nextIndex = (rotationState.currentTenantIndex + 1) % tenants.length;
         await rotationCollection.updateOne(
           { binType: rotationKey },
@@ -246,13 +311,13 @@ export async function checkAndSendNotifications(type: "put-out" | "bring-in" = "
             },
           }
         );
-        console.log(`[ROTATION] Advanced rotation to index ${nextIndex} (${tenants[nextIndex]?.name})`);
+        console.log(`[ROTATION] Advanced rotation to index ${nextIndex} (${tenants[nextIndex]?.name}) for next week`);
+      } else {
+        responsibleTenant = tenants[0];
       }
-    } else {
+    } else if (tenants.length > 0) {
       responsibleTenant = tenants[0];
     }
-  } else if (tenants.length > 0) {
-    responsibleTenant = tenants[0];
   }
 
   // Send notification to the group
