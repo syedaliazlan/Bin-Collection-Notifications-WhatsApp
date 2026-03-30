@@ -18,27 +18,29 @@ export function startScheduler() {
     return;
   }
 
-  // Run every Monday at notification time (default 5:00 PM) - Put bins out
-  cronJob = cron.schedule("0 17 * * 1", async () => {
+  const cronOptions = { timezone: "Europe/London" };
+
+  // Run every Sunday at 5:00 PM UK time - Put bins out (collection is Monday)
+  cronJob = cron.schedule("0 17 * * 0", async () => {
     console.log("Running scheduled notification check (put bins out)...");
     try {
       await checkAndSendNotifications("put-out");
     } catch (error) {
       console.error("Error in scheduled notification check:", error);
     }
-  });
+  }, cronOptions);
 
-  // Run every Tuesday at bring-in time (default 5:00 PM) - Bring bins back in
-  bringInCronJob = cron.schedule("0 17 * * 2", async () => {
+  // Run every Monday at 5:00 PM UK time - Bring bins back in (collection day)
+  bringInCronJob = cron.schedule("0 17 * * 1", async () => {
     console.log("Running scheduled notification check (bring bins in)...");
     try {
       await checkAndSendNotifications("bring-in");
     } catch (error) {
       console.error("Error in scheduled bring-in notification check:", error);
     }
-  });
+  }, cronOptions);
 
-  console.log("Scheduler started - will run every Monday at 5:00 PM (put out) and Tuesday at 5:00 PM (bring in)");
+  console.log("Scheduler started - will run every Sunday at 5:00 PM (put out) and Monday at 5:00 PM (bring in), Europe/London timezone");
 }
 
 export function stopScheduler() {
@@ -56,9 +58,9 @@ export function stopScheduler() {
 export type CheckAndSendResult = { sent: boolean; reason?: string };
 
 /**
- * Get the target collection date (the Tuesday this notification is about).
- * - For "put-out" (sent on Monday): the next day (Tuesday)
- * - For "bring-in" (sent on Tuesday): today (Tuesday)
+ * Get the target collection date (the Monday this notification is about).
+ * - For "put-out" (sent on Sunday): the next day (Monday)
+ * - For "bring-in" (sent on Monday): today (Monday)
  * This is used for deduplication to ensure we only send one notification per collection date per type.
  */
 function getCollectionDate(type: "put-out" | "bring-in"): string {
@@ -66,26 +68,26 @@ function getCollectionDate(type: "put-out" | "bring-in"): string {
   const collectionDate = new Date(now);
 
   if (type === "put-out") {
-    // Put-out is sent on Monday; collection is tomorrow (Tuesday)
+    // Put-out is sent on Sunday; collection is tomorrow (Monday)
     const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
-    if (dayOfWeek === 1) {
-      // Monday → Tuesday is +1
+    if (dayOfWeek === 0) {
+      // Sunday → Monday is +1
       collectionDate.setDate(now.getDate() + 1);
     } else {
-      // If called on a different day (e.g. manual test), find the next Tuesday
-      const daysUntilTuesday = (2 - dayOfWeek + 7) % 7 || 7;
-      collectionDate.setDate(now.getDate() + daysUntilTuesday);
+      // If called on a different day (e.g. manual test), find the next Monday
+      const daysUntilMonday = (1 - dayOfWeek + 7) % 7 || 7;
+      collectionDate.setDate(now.getDate() + daysUntilMonday);
     }
   } else {
-    // Bring-in is sent on Tuesday; collection is today
-    // If called on a different day, find the most recent Tuesday or next Tuesday
+    // Bring-in is sent on Monday; collection is today
+    // If called on a different day, find the next Monday
     const dayOfWeek = now.getDay();
-    if (dayOfWeek === 2) {
-      // Already Tuesday, use today
+    if (dayOfWeek === 1) {
+      // Already Monday, use today
     } else {
-      // Find next Tuesday
-      const daysUntilTuesday = (2 - dayOfWeek + 7) % 7 || 7;
-      collectionDate.setDate(now.getDate() + daysUntilTuesday);
+      // Find next Monday
+      const daysUntilMonday = (1 - dayOfWeek + 7) % 7 || 7;
+      collectionDate.setDate(now.getDate() + daysUntilMonday);
     }
   }
 
@@ -173,7 +175,7 @@ export async function checkAndSendNotifications(type: "put-out" | "bring-in" = "
       binTypes = getBinTypesForWeek(isOddWeek);
     }
   } else {
-    // For put-out, calculate based on the COLLECTION date (next Tuesday), not today
+    // For put-out, calculate based on the COLLECTION date (next Monday), not today
     const collectionDateObj = new Date(collectionDate + "T12:00:00");
     const weekNumber = getWeekNumber(collectionDateObj);
     const isOddWeek = weekNumber % 2 === 1;

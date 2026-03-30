@@ -52,7 +52,9 @@ export function createNotificationMessage(
   if (type === "put-out") {
     const greeting = name ? `Hello ${name}!` : "Hello!";
     const turnLine = name ? "It's your turn to take out the bins. " : "";
-    return `${greeting} ${turnLine}Tomorrow is ${binNamesPhrase} collection day. Please put ${colourPhrase} out tonight. Thanks!${testSuffix}`;
+    const hasBatteries = binTypes.includes("general_waste");
+    const batteriesLine = hasBatteries ? " Batteries can also go out with the general waste." : "";
+    return `${greeting} ${turnLine}Tomorrow is ${binNamesPhrase} collection day. Please put ${colourPhrase} out tonight.${batteriesLine} Thanks!${testSuffix}`;
   }
 
   // bring-in

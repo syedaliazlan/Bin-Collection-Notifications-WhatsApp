@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!schedule) {
       schedule = {
         _id: "",
-        collectionDay: "Tuesday",
+        collectionDay: "Monday",
         binTypes: ["general_waste", "paper_card", "glass_cans_plastics"],
         weekPattern: "all",
         notificationTime: "17:00",
@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
     // This ensures weekOffset=0 matches exactly what the hero shows
     const today = new Date();
     const nextCollectionDate = new Date(today);
-    const daysUntilTuesday = (2 - nextCollectionDate.getDay() + 7) % 7 || 7;
-    nextCollectionDate.setDate(today.getDate() + daysUntilTuesday);
+    const daysUntilMonday = (1 - nextCollectionDate.getDay() + 7) % 7 || 7;
+    nextCollectionDate.setDate(today.getDate() + daysUntilMonday);
     
     // Add weekOffset weeks to the next collection date
     const targetCollectionDate = new Date(nextCollectionDate);

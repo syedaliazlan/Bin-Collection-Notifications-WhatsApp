@@ -22,15 +22,14 @@ export async function GET() {
       }, { status: 404 });
     }
 
-    // Get next collection date first (always Tuesday). On collection day (Tuesday),
-    // "next" means the following Tuesday so we don't show today's bins again.
+    // Get next collection date first (always Monday). On collection day (Monday),
+    // "next" means the following Monday so we don't show today's bins again.
     const today = new Date();
     const nextCollection = new Date(today);
-    const daysUntilTuesday = (2 - nextCollection.getDay() + 7) % 7 || 7;
-    nextCollection.setDate(today.getDate() + daysUntilTuesday);
+    const daysUntilMonday = (1 - nextCollection.getDay() + 7) % 7 || 7;
+    nextCollection.setDate(today.getDate() + daysUntilMonday);
 
     // Use the *next collection date's* week to determine bin types (not today's).
-    // e.g. On Tuesday 3-Feb (even week = General), next collection is 10-Feb (odd week = Paper + Glass).
     const weekNumber = getWeekNumber(nextCollection);
     const isOddWeek = weekNumber % 2 === 1;
     const binTypes = getBinTypesForWeek(isOddWeek);
@@ -74,8 +73,8 @@ export async function GET() {
 
     return NextResponse.json({
       nextCollectionDate: nextCollection.toISOString().split('T')[0],
-      nextCollectionDay: "Tuesday",
-      daysUntilCollection: daysUntilTuesday,
+      nextCollectionDay: "Monday",
+      daysUntilCollection: daysUntilMonday,
       binTypes: binTypes.map(bt => ({
         type: bt,
         name: binTypeNames[bt] || bt

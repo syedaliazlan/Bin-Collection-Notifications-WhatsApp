@@ -10,7 +10,7 @@ export async function GET() {
     if (!schedule) {
       // Return default schedule if none exists
       return NextResponse.json({
-        collectionDay: "Tuesday",
+        collectionDay: "Monday",
         binTypes: ["general_waste", "paper_card", "glass_cans_plastics"],
         weekPattern: "all",
         notificationTime: "17:00",
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const existing = await db.collection<Schedule>("schedules").findOne({});
     
     const schedule: Schedule = {
-      collectionDay: collectionDay || "Tuesday",
+      collectionDay: collectionDay || "Monday",
       binTypes: binTypes || ["general_waste", "paper_card", "glass_cans_plastics"],
       weekPattern: weekPattern || "all",
       notificationTime: notificationTime || "17:00",

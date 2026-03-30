@@ -36,10 +36,10 @@ export default function CollectionCalendar({ schedule, tenants, currentRotationI
 
     // Collections after the "Next Collection" (skip weekOffset 0 so we don't duplicate the hero card)
     for (let weekOffset = 1; weekOffset <= 8; weekOffset++) {
-      // Find next Tuesday
+      // Find next Monday
       const targetDate = new Date(today);
-      const daysUntilTuesday = (2 - targetDate.getDay() + 7) % 7 || 7;
-      targetDate.setDate(today.getDate() + daysUntilTuesday + (weekOffset * 7));
+      const daysUntilMonday = (1 - targetDate.getDay() + 7) % 7 || 7;
+      targetDate.setDate(today.getDate() + daysUntilMonday + (weekOffset * 7));
 
       // Calculate week number and bin types
       const weekNumber = getWeekNumber(targetDate);

@@ -88,7 +88,7 @@ export default function SchedulePage() {
       }
 
       setSchedule(scheduleData?.error ? null : scheduleData ?? {
-        collectionDay: "Tuesday",
+        collectionDay: "Monday",
         binTypes: ["general_waste", "paper_card", "glass_cans_plastics"],
         weekPattern: "all",
         notificationTime: "17:00",
@@ -100,7 +100,7 @@ export default function SchedulePage() {
     } catch (error) {
       console.error("Error fetching data:", error);
       setSchedule({
-        collectionDay: "Tuesday",
+        collectionDay: "Monday",
         binTypes: ["general_waste", "paper_card", "glass_cans_plastics"],
         weekPattern: "all",
         notificationTime: "17:00",
@@ -297,7 +297,7 @@ export default function SchedulePage() {
                   <div>
                     <div className="text-sm text-slate-400">Collection Day</div>
                     <div className="font-semibold text-white">
-                      {schedule?.collectionDay || "Tuesday"}
+                      {schedule?.collectionDay || "Monday"}
                     </div>
                   </div>
                   <div>

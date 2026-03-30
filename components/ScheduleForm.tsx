@@ -10,7 +10,7 @@ interface ScheduleFormProps {
 
 export default function ScheduleForm({ schedule, onSave }: ScheduleFormProps) {
   const [formData, setFormData] = useState({
-    collectionDay: schedule?.collectionDay || "Tuesday",
+    collectionDay: schedule?.collectionDay || "Monday",
     binTypes: schedule?.binTypes || [
       "general_waste",
       "paper_card",

@@ -154,7 +154,7 @@ export default function Dashboard() {
           <div className="bg-slate-800/80 p-6 rounded-xl shadow-lg border border-slate-600/50">
             <h3 className="text-lg font-semibold mb-4 text-white">Upcoming Collection</h3>
             <p className="text-slate-300 mb-2">
-              <strong className="text-slate-200">Day:</strong> Tuesday (tomorrow)
+              <strong className="text-slate-200">Day:</strong> Monday (tomorrow)
             </p>
             <p className="text-slate-300 mb-2">
               <strong className="text-slate-200">Bin Types:</strong>
@@ -232,7 +232,7 @@ export default function Dashboard() {
           <div className="bg-slate-800/80 p-6 rounded-xl shadow-lg border border-slate-600/50">
             <h3 className="text-lg font-semibold mb-4 text-white">Schedule Settings</h3>
             <p className="text-slate-300 mb-2">
-              <strong className="text-slate-200">Collection Day:</strong> {schedule?.collectionDay || "Tuesday"}
+              <strong className="text-slate-200">Collection Day:</strong> {schedule?.collectionDay || "Monday"}
             </p>
             <p className="text-slate-300 mb-2">
               <strong className="text-slate-200">Notification Time:</strong> {schedule?.notificationTime || "17:00"}

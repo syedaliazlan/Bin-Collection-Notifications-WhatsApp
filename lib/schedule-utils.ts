@@ -13,7 +13,7 @@ export function getWeekNumber(date: Date): number {
 
 /**
  * Determine which bin types should be collected based on week number
- * Matches Preston council calendar: even weeks = General waste, odd weeks = Paper/card + Glass/cans/plastics
+ * Preston council calendar: even weeks = General waste, odd weeks = Paper/card + Glass/cans/plastics
  */
 export function getBinTypesForWeek(isOddWeek: boolean): BinType[] {
   if (isOddWeek) {

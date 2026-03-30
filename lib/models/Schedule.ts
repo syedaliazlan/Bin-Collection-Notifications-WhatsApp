@@ -2,7 +2,7 @@ export type BinType = "general_waste" | "paper_card" | "glass_cans_plastics";
 
 export interface Schedule {
   _id?: string;
-  collectionDay: string; // "Tuesday"
+  collectionDay: string; // "Monday"
   binTypes: BinType[];
   weekPattern: "odd" | "even" | "all";
   notificationTime: string; // "17:00" (5:00 PM) - for putting bins out

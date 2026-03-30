@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Auto-detect notification type from day of week if not explicitly provided.
-    // Monday (day 1) → put-out, Tuesday (day 2) → bring-in.
+    // Sunday (day 0) → put-out, Monday (day 1) → bring-in.
     // This prevents misconfigured external cron from sending the wrong type.
     let notificationType: "put-out" | "bring-in";
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     } else {
       // No type provided — infer from current day of week
       const dayOfWeek = new Date().getDay(); // 0=Sun, 1=Mon, 2=Tue, ...
-      if (dayOfWeek === 2) {
+      if (dayOfWeek === 1) {
         notificationType = "bring-in";
       } else {
         notificationType = "put-out";
